@@ -1,0 +1,25 @@
+﻿RWStructuredBuffer<float> points;
+
+static const int numThreads = 8;
+
+int sizeX;
+int sizeY;
+int sizeZ;
+float4 size;
+float4 position;
+
+// Get density at position (x, y, z) from the grid.
+float3 getDensityPosition(uint x, uint y, uint z) {
+    float3 posInGrid = float3(
+        ((float) x / (sizeX - 1.0f)) * size.x,
+        ((float) y / (sizeY - 1.0f)) * size.y, 
+        ((float) z / (sizeZ - 1.0f)) * size.z
+    );
+                        
+    return position + posInGrid - (size / 2.0f);
+} 
+
+// Get index from coord to flat array
+int indexFromCoord(uint x, uint y, uint z) {
+    return x + sizeX * (y + sizeY * z);
+}

@@ -1,0 +1,21 @@
+﻿#pragma kernel Compute
+#include "/Includes/Density.compute"
+
+float radius;
+float4 sphereCenter;
+
+float get(float3 position) {
+    return length(position - sphereCenter) - radius; 
+}
+
+[numthreads(numThreads, numThreads, numThreads)]
+void Compute (uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= sizeX || id.y >= sizeY || id.z >= sizeZ) {
+        return;
+    }
+   
+    float density = get(getDensityPosition(id.x, id.y, id.z));
+    int index = indexFromCoord(id.x, id.y, id.z);
+    points[index] = density;
+}

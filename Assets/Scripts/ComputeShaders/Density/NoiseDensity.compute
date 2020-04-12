@@ -1,0 +1,24 @@
+﻿#pragma kernel Compute
+#include "/Includes/Density.compute"
+#include "/Includes/Noise.compute"
+
+float scale;
+float weight;
+
+float get(float3 pos) {
+    float density = snoise(pos / scale);
+    density *= weight;
+    return 1-abs(density);
+}
+
+[numthreads(numThreads, numThreads, numThreads)]
+void Compute (uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= sizeX || id.y >= sizeY || id.z >= sizeZ) {
+        return;
+    }
+   
+    float density = get(getDensityPosition(id.x, id.y, id.z));
+    int index = indexFromCoord(id.x, id.y, id.z);
+    points[index] = density;
+}

@@ -7,6 +7,8 @@ public class DensityVisualizer : MonoBehaviour {
     public Density density;
 
     public float dotSizeFactor = 1.0f;
+
+    public bool sameDotSize = false;
     
     private void OnDrawGizmos() {
         Gizmos.color = Color.magenta;
@@ -22,6 +24,10 @@ public class DensityVisualizer : MonoBehaviour {
                         Gizmos.color = Color.cyan;
                     } else {
                         Gizmos.color = Color.red;
+                    }
+
+                    if (sameDotSize) {
+                        de = 0.5f * dotSizeFactor;
                     }
                     
                     var unitv = new Vector3(transform.localScale.x / 10f, transform.localScale.y / 10f, transform.localScale.z / 10f);

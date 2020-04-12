@@ -10,7 +10,7 @@ namespace VoxelEngine {
         
         private const int ThreadGroupSize = 8;
 
-        [Range(1, 5)]
+        [Range(1, 12)]
         public int octaves;
 
         public float lacunarity;
@@ -31,35 +31,61 @@ namespace VoxelEngine {
             var p2 = position * (1f / noiseScale);
             return f.GetSimplex(p2.x, p2.y, p2.z) * noiseWeight;
         }
-
+        
         public override DensityData GenerateDensityGridGpu(Vector3Int gridSize, Vector3 boxSize, Vector3 rendererPos) {
             var densityData = new DensityData(gridSize);
 
             var size = gridSize.x * gridSize.y * gridSize.z;
-            var tgX = Mathf.CeilToInt (gridSize.x / (float) ThreadGroupSize);
-            var tgY = Mathf.CeilToInt (gridSize.y / (float) ThreadGroupSize);
-            var tgZ = Mathf.CeilToInt (gridSize.z / (float) ThreadGroupSize);
+            var threadsGroupsX = Mathf.CeilToInt (gridSize.x / (float) ThreadGroupSize);
+            var threadGroupsY = Mathf.CeilToInt (gridSize.y / (float) ThreadGroupSize);
+            var threadGroupsZ = Mathf.CeilToInt (gridSize.z / (float) ThreadGroupSize);
             
             var buffer = new ComputeBuffer(size, sizeof(float));
             buffer.SetData(densityData.Data);
             
             computeShader.SetBuffer(0, "points", buffer);
-            
+
+            // Standard variables
             computeShader.SetInt("sizeX", gridSize.x);
             computeShader.SetInt("sizeY", gridSize.y);
             computeShader.SetInt("sizeZ", gridSize.z);
             computeShader.SetVector("size", boxSize);
             computeShader.SetVector("position", rendererPos);
 
-            computeShader.SetFloat("scale", noiseScale);
-            computeShader.SetFloat("weight", noiseWeight);
+            // Specific variables
+            var offsets = CreateOffsets();
+            var offsetsBuffer = new ComputeBuffer (offsets.Length, sizeof (float) * 3);
+            offsetsBuffer.SetData (offsets);
             
-            computeShader.Dispatch(0, tgX, tgY, tgZ);
+            computeShader.SetBuffer (0, "offsets", offsetsBuffer);
+            computeShader.SetInt("octaves", octaves);
+            computeShader.SetFloat("noiseScale", noiseScale);
+            computeShader.SetFloat("noiseWeight", noiseWeight);
+            computeShader.SetFloat("persistence", persistence);
+            computeShader.SetFloat("weightMultiplier", weightMultiplier);
+            computeShader.SetFloat("lacunarity", lacunarity);
+            
+            // Launch kernels
+            computeShader.Dispatch(0, threadsGroupsX, threadGroupsY, threadGroupsZ);
 
+            // Get results
             buffer.GetData(densityData.Data);
             buffer.Release();
+            offsetsBuffer.Release();
             
             return densityData;
         }
+        
+        private Vector3[] CreateOffsets() {
+            var prng = new System.Random (seed);
+            var offsets = new Vector3[octaves];
+            float offsetRange = 1000;
+            for (var i = 0; i < octaves; i++) {
+                offsets[i] = new Vector3 ((float) prng.NextDouble () * 2 - 1, (float) prng.NextDouble () * 2 - 1, (float) prng.NextDouble () * 2 - 1) * offsetRange;
+            }
+
+            return offsets;
+        }
+
     }
 }

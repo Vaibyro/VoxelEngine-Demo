@@ -437,7 +437,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1449430148
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -452,6 +452,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   density: {fileID: 1542503574}
   dotSizeFactor: 4.47
+  sameDotSize: 0
 --- !u!4 &1449430149
 Transform:
   m_ObjectHideFlags: 0
@@ -495,7 +496,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc511af5c9cf14a4289a3e5c87b43608, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gpuComputation: 1
+  gpuComputation: 0
   computeShader: {fileID: 7200000, guid: 391ee2734b5c51341884dc833407b8ae, type: 3}
   octaves: 3
   lacunarity: 38.87
@@ -555,7 +556,7 @@ MonoBehaviour:
   method: 2
   density: {fileID: 1542503574}
   threshold: 1
-  gridSize: {x: 20, y: 20, z: 20}
+  gridSize: {x: 50, y: 50, z: 50}
   size: {x: 100, y: 100, z: 100}
   smoothShade: 1
   showGizmos: 1

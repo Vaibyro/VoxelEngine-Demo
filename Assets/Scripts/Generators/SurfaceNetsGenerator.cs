@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -12,7 +13,7 @@ namespace VoxelEngine {
         private readonly List<int> _trianglesBuffer = new List<int>();
         private readonly Dictionary<Vector3Int, int> _verticesIndicesBuffer = new Dictionary<Vector3Int, int>();
 
-        public override Mesh UpdateMesh(Mesh oldMesh) {
+        public override MeshData GenerateMeshData() {
             // PART 1 - Create density map
             var densityGrid = density.GenerateDensityGrid(gridSize, size, position);
 
@@ -22,20 +23,14 @@ namespace VoxelEngine {
             // PART 3 - Create faces
             var triangles = GetTriangles(vertices, vertIndices, densityGrid);
 
-            // PART 4 - Update
-            oldMesh.Clear();
-            oldMesh.SetVertices(vertices);
-            oldMesh.SetTriangles(triangles, 0);
-            oldMesh.RecalculateNormals();
-            oldMesh.RecalculateBounds();
-
-            return oldMesh;
+            return new MeshData(vertices, triangles);
         }
         
         private (List<Vector3>, Dictionary<Vector3Int, int>) GetVertices(DensityData densityData) {
              _verticesBuffer.Clear();
              _verticesIndicesBuffer.Clear();
-
+            
+             
             for (var xi = 0; xi < gridSize.x - 1; xi++) {
                 for (var yi = 0; yi < gridSize.y - 1; yi++) {
                     for (var zi = 0; zi < gridSize.z - 1; zi++) {

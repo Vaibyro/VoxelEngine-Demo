@@ -64,7 +64,7 @@ namespace VoxelEngine {
             computeShader.SetFloat("persistence", persistence);
             computeShader.SetFloat("weightMultiplier", weightMultiplier);
             computeShader.SetFloat("lacunarity", lacunarity);
-            
+
             // Launch kernels
             computeShader.Dispatch(0, threadsGroupsX, threadGroupsY, threadGroupsZ);
 

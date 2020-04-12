@@ -8,7 +8,7 @@ using Unity.Jobs;
 using UnityEngine;
 
 namespace VoxelEngine {
-    public enum VoxelMethod // your custom enumeration
+    public enum VoxelMethod
     {
         Blocks,
         Shapes,
@@ -44,19 +44,6 @@ namespace VoxelEngine {
         private void Awake() {
             _generator = _generators[method];
 
-            UpdateGenerator(_generator);
-
-            /*
-            // Add meshfilter + renderer
-            if (GetComponent<MeshFilter>() == null) {
-                meshFilter = gameObject.AddComponent<MeshFilter>();
-            }
-            
-            if (GetComponent<MeshRenderer>() == null) {
-                gameObject.AddComponent<MeshRenderer>();
-            }
-            */
-
             // Generate new mesh if it's null
             if (meshFilter.mesh == null) {
                 meshFilter.mesh = new Mesh {name = "generatedMesh"};
@@ -67,6 +54,10 @@ namespace VoxelEngine {
             //Debug.Log("test");
         }
 
+        private void Start() {
+            RequestGeneratorUpdate(_generator);
+        }
+
         private void Update() {
             // Method change
             if (_lastMethod != method) {
@@ -75,21 +66,32 @@ namespace VoxelEngine {
 
                 Debug.Log($"Voxel method changed to {method.ToString()}.");
             }
-
-            if (debugAllFrameUpdate) {
-                UpdateGenerator(_generator);
+            
+            // Update mesh data if new mesh available
+            if (_generator.MeshDataAvailable && _generator.TryGetMeshData(out var meshData)) {
+                UpdateMesh(meshData);
             }
+        }
+
+        private void UpdateMesh(MeshData meshData) {
+            var mesh = meshFilter.mesh;
+            mesh.Clear();
+            mesh.SetVertices(meshData.vertices);
+            mesh.SetTriangles(meshData.triangles, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
         }
 
         /// <summary>
         /// Method to ask the generator to produce a new mesh.
         /// </summary>
         /// <param name="generator"></param>
-        private void UpdateGenerator(VoxelGenerator generator) {
+        private void RequestGeneratorUpdate(VoxelGenerator generator) {
             if (_generator == null) {
                 _generator = _generators[method];
             }
 
+            // Give information to the generator.
             _generator.density = density;
             _generator.size = size;
             _generator.gridSize = gridSize;
@@ -97,7 +99,8 @@ namespace VoxelEngine {
             _generator.position = transform.position;
             _generator.smoothShade = smoothShade;
 
-            meshFilter.mesh = _generator.UpdateMesh(meshFilter.mesh);
+            Debug.Log("starting task");
+            _generator.RequestMeshUpdate();
         }
 
         private void OnDrawGizmos() {

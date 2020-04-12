@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace VoxelEngine {
     public abstract class VoxelGenerator
     {
-        protected Vector3 UnitVector => new Vector3(  size.x / gridSize.x, size.y / gridSize.y,size.z / gridSize.z);
+        public Vector3 UnitVector => new Vector3(  size.x / gridSize.x, size.y / gridSize.y,size.z / gridSize.z);
         public Density density;
         public float threshold;
         public Vector3 position;
@@ -14,6 +16,12 @@ namespace VoxelEngine {
         public Vector3Int gridSize;
         public bool smoothShade;
 
+        private volatile bool processingNewMesh = false;
+
+        protected ConcurrentQueue<MeshData> meshDataQueue = new ConcurrentQueue<MeshData>();
+
+        public bool MeshDataAvailable => meshDataQueue.Count > 0;
+        
         public static readonly Vector3[] CubeVertices =
         {
             new Vector3( 0, 0, 0 ),
@@ -26,13 +34,39 @@ namespace VoxelEngine {
             new Vector3( 1, 1, 1 ),
         };
 
-        public static float MaterialVoid = 0.0f;
-        public static float MaterialSolid = 1.0f;
+        public abstract MeshData GenerateMeshData();
 
-        public abstract Mesh UpdateMesh(Mesh oldMesh);
+        public Task RequestMeshUpdate() {
+            var task = new Task( () => {
+                processingNewMesh = true;
+                var meshData = GenerateMeshData(); // todo: problem, accessed objects from the voxel generator are not thread safe
+                meshDataQueue.Enqueue(meshData);
+                processingNewMesh = false;
+            });
+            task.Start();
+            return task;
+        }
         
-        protected Vector3 GetDensityPosition(Vector3Int coord) {
-            return GetDensityPosition(coord.x, coord.y, coord.z);
+        protected Vector3 GetDensityPosition(Vector3Int coordinates) {
+            return GetDensityPosition(coordinates.x, coordinates.y, coordinates.z);
+        }
+
+        public bool TryGetMeshData(out MeshData meshdata) {
+            // Flush the beginning of the queue
+            while (meshDataQueue.Count > 1) {
+                meshDataQueue.TryDequeue(out _);
+            }
+
+            // If queue is empty, mesh data is not ready yet.
+            if (meshDataQueue.Count < 1) {
+                if (!processingNewMesh) {
+                    RequestMeshUpdate(); // Process a new mesh if not requested
+                }
+                meshdata = null;
+                return false;
+            }
+
+            return meshDataQueue.TryDequeue(out meshdata);
         }
 
         protected Vector3 GetDensityPosition(int x, int y, int z) {

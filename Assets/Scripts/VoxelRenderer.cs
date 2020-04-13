@@ -26,6 +26,8 @@ namespace VoxelEngine {
         public bool showGizmos = true;
         public bool debugAllFrameUpdate;
 
+        public ComputeShader algoShader;
+        
         private VoxelGenerator _generator;
 
         private readonly IDictionary<VoxelMethod, VoxelGenerator> _generators =
@@ -43,7 +45,8 @@ namespace VoxelEngine {
 
         private void Awake() {
             _generator = _generators[method];
-
+            _generator.computeShader = algoShader;
+            
             UpdateGenerator(_generator);
 
             /*

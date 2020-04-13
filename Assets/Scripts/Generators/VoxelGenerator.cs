@@ -14,6 +14,8 @@ namespace VoxelEngine {
         public Vector3Int gridSize;
         public bool smoothShade;
 
+        public ComputeShader computeShader;
+
         public static readonly Vector3[] CubeVertices =
         {
             new Vector3( 0, 0, 0 ),

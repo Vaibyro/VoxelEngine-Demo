@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Debug = UnityEngine.Debug;
 
 namespace VoxelEngine {
@@ -40,11 +41,7 @@ namespace VoxelEngine {
         }
         
         private (List<Vector3>, Dictionary<Vector3Int, int>) GetVertices(DensityData densityData) {
-            
-            var st = new Stopwatch();
-            st.Start();
-
-            _verticesBuffer.Clear();
+             _verticesBuffer.Clear();
              _verticesIndicesBuffer.Clear();
              
              var ThreadGroupSize = 8;
@@ -72,7 +69,6 @@ namespace VoxelEngine {
              computeShader.SetVector("position", this.position);
              computeShader.SetVector("UnitVector", this.UnitVector);
              
-
              // Launch kernels
              computeShader.Dispatch(0, threadsGroupsX, threadGroupsY, threadGroupsZ);
 
@@ -80,29 +76,22 @@ namespace VoxelEngine {
              ComputeBuffer.CopyCount (verticesBuffer, vCountBuffer, 0);
              int[] triCountArray = { 0 };
              vCountBuffer.GetData (triCountArray);
-             int numV = triCountArray[0];
+             var numV = triCountArray[0];
              
              // Get results
-
-             Vertex[] verticesA = new Vertex[numV];
+             var verticesA = new Vertex[numV];
              verticesBuffer.GetData (verticesA, 0, 0, numV);
              
-             
-             
-             
+             // Release buffers
              densityBuffer.Release();
              verticesBuffer.Release();
              vCountBuffer.Release();
-
-
+             
              foreach (var vertexA in verticesA) {
                  _verticesIndicesBuffer.Add(new Vector3Int((int)vertexA.x, (int)vertexA.y, (int)vertexA.z), _verticesBuffer.Count);
                  _verticesBuffer.Add(vertexA.pos);
              }
              
-             st.Stop();
-             Debug.Log(st.ElapsedMilliseconds);
-
              return (_verticesBuffer, _verticesIndicesBuffer);
         }
          
@@ -113,8 +102,6 @@ namespace VoxelEngine {
                 for (var yi = 0; yi < gridSize.y - 1; yi++) {
                     for (var zi = 0; zi < gridSize.z - 1; zi++) {
                         if (xi > 0 && yi > 0) {
-                            //var solid1 = density.Get(position + GetDensityPosition(xi, yi, zi + 0)) > 0f;
-                            //var solid2 = density.Get(position + GetDensityPosition(xi, yi, zi + 1)) > 0f;
                             var solid1 = densityData[xi, yi, zi + 0] > 0f;
                             var solid2 = densityData[xi, yi, zi + 1] > 0f;
                             if (solid1 != solid2) {
@@ -139,8 +126,6 @@ namespace VoxelEngine {
                         }
 
                         if (xi > 0 && zi > 0) {
-                            //var solid1 = density.Get(position + GetDensityPosition(xi, yi + 0, zi)) > 0f;
-                            //var solid2 = density.Get(position + GetDensityPosition(xi, yi + 1, zi)) > 0f;
                             var solid1 = densityData[xi, yi + 0, zi] > 0f;
                             var solid2 = densityData[xi, yi + 1, zi] > 0f;
                             if (solid1 != solid2) {
@@ -167,8 +152,6 @@ namespace VoxelEngine {
                         }
 
                         if (yi > 0 && zi > 0) {
-                            //var solid1 = density.Get(position + GetDensityPosition(xi + 0, yi, zi)) > 0f;
-                            //var solid2 = density.Get(position + GetDensityPosition(xi + 1, yi, zi)) > 0f;
                             var solid1 = densityData[xi + 0, yi, zi] > 0f;
                             var solid2 = densityData[xi + 1, yi, zi] > 0f;
                             

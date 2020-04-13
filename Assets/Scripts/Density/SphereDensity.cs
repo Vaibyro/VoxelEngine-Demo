@@ -4,17 +4,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace VoxelEngine {
-    public class SphereDensity : Density {
+    public class SphereDensity : GpuComputedDensity {
         public float radius;
-        public ComputeShader computeShader;
-
-        private const int ThreadGroupSize = 8;
 
         public override float Get(Vector3 position) {
             return Vector3.Magnitude(position - transform.position) - radius;
         }
 
-        public override DensityData GenerateDensityGridGpu(Vector3Int gridSize, Vector3 boxSize, Vector3 rendererPos) {
+        public override DensityData GenerateDensityGrid(Vector3Int gridSize, Vector3 boxSize, Vector3 rendererPos) {
             var densityData = new DensityData(gridSize);
 
             var size = gridSize.x * gridSize.y * gridSize.z;
@@ -24,7 +21,7 @@ namespace VoxelEngine {
 
             var buffer = new ComputeBuffer(size, sizeof(float));
             buffer.SetData(densityData.Data);
-            
+
             computeShader.SetBuffer(0, "points", buffer);
             
             computeShader.SetFloat ("radius", radius);

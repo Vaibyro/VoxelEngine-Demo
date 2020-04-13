@@ -5,11 +5,7 @@ using UnityEngine;
 using UnityEngine.SocialPlatforms;
 
 namespace VoxelEngine {
-    public class NoiseDensity : Density {
-        public ComputeShader computeShader;
-        
-        private const int ThreadGroupSize = 8;
-
+    public class NoiseDensity : GpuComputedDensity {
         [Range(1, 12)]
         public int octaves;
 
@@ -17,13 +13,7 @@ namespace VoxelEngine {
         public float persistence;
         public float noiseScale;
         public float noiseWeight;
-        public float floorOffset;
         public float weightMultiplier;
-        public float hardFloor;
-        public float hardFloorWeight;
-        public Vector3 offset;
-        public Vector4 shaderParams;
-        
         public int seed;
         
         public override float Get(Vector3 position) {
@@ -32,14 +22,12 @@ namespace VoxelEngine {
             return f.GetSimplex(p2.x, p2.y, p2.z) * noiseWeight;
         }
         
-        public override DensityData GenerateDensityGridGpu(Vector3Int gridSize, Vector3 boxSize, Vector3 rendererPos) {
+        public override DensityData GenerateDensityGrid(Vector3Int gridSize, Vector3 boxSize, Vector3 rendererPos) {
             var densityData = new DensityData(gridSize);
 
-            var size = gridSize.x * gridSize.y * gridSize.z;
-            var threadsGroupsX = Mathf.CeilToInt (gridSize.x / (float) ThreadGroupSize);
-            var threadGroupsY = Mathf.CeilToInt (gridSize.y / (float) ThreadGroupSize);
-            var threadGroupsZ = Mathf.CeilToInt (gridSize.z / (float) ThreadGroupSize);
-            
+            var size = GpuComputingUtils.GetSize(gridSize);
+            var threadGroups = GpuComputingUtils.GetThreadGroupsCount(gridSize, ThreadGroupSize);
+
             var buffer = new ComputeBuffer(size, sizeof(float));
             buffer.SetData(densityData.Data);
             
@@ -64,9 +52,9 @@ namespace VoxelEngine {
             computeShader.SetFloat("persistence", persistence);
             computeShader.SetFloat("weightMultiplier", weightMultiplier);
             computeShader.SetFloat("lacunarity", lacunarity);
-            
+
             // Launch kernels
-            computeShader.Dispatch(0, threadsGroupsX, threadGroupsY, threadGroupsZ);
+            computeShader.Dispatch(0, threadGroups.x, threadGroups.y, threadGroups.z);
 
             // Get results
             buffer.GetData(densityData.Data);
@@ -87,5 +75,6 @@ namespace VoxelEngine {
             return offsets;
         }
 
+        
     }
 }

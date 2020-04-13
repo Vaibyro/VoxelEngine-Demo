@@ -28,10 +28,32 @@ namespace VoxelEngine {
             new Vector3( 1, 1, 1 ),
         };
 
-        public abstract Mesh UpdateMesh(Mesh oldMesh);
+        protected readonly Queue<MeshData> _meshDataQueue = new Queue<MeshData>();
 
-        protected Queue<MeshData> _meshDataQueue;
+        public abstract bool IsProcessing { get; protected set; }
+        public bool MeshDataAvailable => _meshDataQueue.Count > 0;
+        
+        public abstract IEnumerator GenerateMeshData();
 
+        public void RequestMeshUpdate(MonoBehaviour monoBehaviour) {
+            monoBehaviour.StartCoroutine(GenerateMeshData());
+        }
+        
+        public bool TryGetMeshData(out MeshData meshData) {
+            if (!MeshDataAvailable) {
+                meshData = null;
+                return false;
+            }
+            
+            // Flush the beginning of the queue
+            while (_meshDataQueue.Count > 1) {
+                _meshDataQueue.Dequeue();
+            }
+
+            meshData = _meshDataQueue.Dequeue();
+            return true;
+        }
+        
         protected Vector3 GetDensityPosition(Vector3Int coord) {
             return GetDensityPosition(coord.x, coord.y, coord.z);
         }

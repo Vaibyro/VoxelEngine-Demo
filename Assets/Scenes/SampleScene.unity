@@ -150,9 +150,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a7c4892d9fb0244858270f67e554f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gpuComputation: 1
-  radius: 46.4
   computeShader: {fileID: 7200000, guid: 431c03c466eef8d4ca98416d5885f2ad, type: 3}
+  radius: 46.4
 --- !u!4 &121999181
 Transform:
   m_ObjectHideFlags: 0
@@ -284,7 +283,7 @@ Light:
     m_Type: 2
     m_Resolution: -1
     m_CustomResolution: -1
-    m_Strength: 1
+    m_Strength: 0.5
     m_Bias: 0.05
     m_NormalBias: 0.4
     m_NearPlane: 0.2
@@ -432,7 +431,7 @@ GameObject:
   - component: {fileID: 1449430149}
   - component: {fileID: 1449430148}
   m_Layer: 0
-  m_Name: Density viz
+  m_Name: Density visualizer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -452,6 +451,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   density: {fileID: 1542503574}
   dotSizeFactor: 4.47
+  sameDotSize: 0
 --- !u!4 &1449430149
 Transform:
   m_ObjectHideFlags: 0
@@ -495,20 +495,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc511af5c9cf14a4289a3e5c87b43608, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gpuComputation: 1
   computeShader: {fileID: 7200000, guid: 391ee2734b5c51341884dc833407b8ae, type: 3}
-  octaves: 3
-  lacunarity: 38.87
-  persistence: 27.16
-  noiseScale: 84.34
-  noiseWeight: 3.33
-  floorOffset: 3.73
-  weightMultiplier: 0.86
-  hardFloor: 11.71
-  hardFloorWeight: 29.17
-  offset: {x: 1.1, y: -0.59, z: 0}
-  shaderParams: {x: 1.06, y: 0, z: 0, w: 0}
-  seed: 395
+  octaves: 12
+  lacunarity: 2.15
+  persistence: 0.38
+  noiseScale: 2.48
+  noiseWeight: 4.41
+  weightMultiplier: 4.24
+  seed: 574
 --- !u!4 &1542503575
 Transform:
   m_ObjectHideFlags: 0
@@ -555,11 +549,12 @@ MonoBehaviour:
   method: 2
   density: {fileID: 1542503574}
   threshold: 1
-  gridSize: {x: 20, y: 20, z: 20}
-  size: {x: 100, y: 100, z: 100}
+  gridSize: {x: 180, y: 180, z: 180}
+  size: {x: 20, y: 20, z: 20}
   smoothShade: 1
   showGizmos: 1
   debugAllFrameUpdate: 1
+  algoShader: {fileID: 7200000, guid: 0f95041721f2fe345b30e285bd0ed258, type: 3}
   meshFilter: {fileID: 136504193}
 --- !u!4 &1933479651
 Transform:

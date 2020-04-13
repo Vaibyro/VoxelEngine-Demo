@@ -5,11 +5,8 @@ using UnityEngine;
 namespace VoxelEngine {
     public class BlocksVoxelGenerator : VoxelGenerator
     {
-        public void GenerateVertices(Vector3Int gridPosition) {
-            
-        }
-
-        public override Mesh UpdateMesh(Mesh oldMesh) {
+        public override bool IsProcessing { get; protected set; }
+        public override IEnumerator GenerateMeshData() {
             throw new System.NotImplementedException();
         }
     }

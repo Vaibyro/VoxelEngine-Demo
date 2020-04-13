@@ -7,6 +7,8 @@ using UnityEngine;
 
 namespace VoxelEngine {
     public abstract class Density : MonoBehaviour {
+        public DensityData lastDensityData;
+        
         /// <summary>
         /// Get density value at given position.
         /// </summary>

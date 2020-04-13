@@ -28,11 +28,10 @@ namespace VoxelEngine {
             new Vector3( 1, 1, 1 ),
         };
 
-        public static float MaterialVoid = 0.0f;
-        public static float MaterialSolid = 1.0f;
-
         public abstract Mesh UpdateMesh(Mesh oldMesh);
-        
+
+        protected Queue<MeshData> _meshDataQueue;
+
         protected Vector3 GetDensityPosition(Vector3Int coord) {
             return GetDensityPosition(coord.x, coord.y, coord.z);
         }

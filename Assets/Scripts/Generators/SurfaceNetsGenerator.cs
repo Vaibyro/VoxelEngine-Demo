@@ -33,13 +33,6 @@ namespace VoxelEngine {
             return oldMesh;
         }
 
-        struct Vertex {
-            public uint x;
-            public uint y;
-            public uint z;
-            public Vector3 pos;
-        }
-        
         private (List<Vector3>, Dictionary<Vector3Int, int>) GetVertices(DensityData densityData) {
              _verticesBuffer.Clear();
              _verticesIndicesBuffer.Clear();

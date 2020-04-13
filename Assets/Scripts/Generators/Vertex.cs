@@ -2,9 +2,9 @@ using UnityEngine;
 
 namespace VoxelEngine {
     public struct Vertex {
-        public uint x;
-        public uint y;
-        public uint z;
+        public int x;
+        public int y;
+        public int z;
         public Vector3 pos;
     }
 }

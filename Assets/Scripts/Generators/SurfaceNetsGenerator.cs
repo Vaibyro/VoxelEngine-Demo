@@ -25,18 +25,27 @@ namespace VoxelEngine {
             }
             Debug.Log("Chunk processing.");
             IsProcessing = true;
-
+            
+            var st = new Stopwatch();
+            st.Start();
             var densityGrid = density.GenerateDensityGrid(gridSize, size, position);
+            st.Stop();
+            Debug.Log(st.ElapsedMilliseconds);
+            
             yield return GetVertices(densityGrid);
             yield return GetTriangles(_verticesIndicesBuffer, densityGrid);
-
+            
             // Enqueue new mesh data
             _meshDataQueue.Enqueue(new MeshData(_verticesBuffer, _trianglesBuffer));
+
             IsProcessing = false;
             Debug.Log("Chunk processed.");
         }
 
         private IEnumerator GetVertices(DensityData densityData) {
+            
+
+            
             _verticesBuffer.Clear();
             _verticesIndicesBuffer.Clear();
             
@@ -66,11 +75,15 @@ namespace VoxelEngine {
             // Launch kernels
             computeShader.Dispatch(0, threadsGroupsX, threadGroupsY, threadGroupsZ);
 
+
+            
             // ------- Unblock async process
             var request = AsyncGPUReadback.Request(verticesBuffer);
             yield return new WaitUntil(() => request.done);
 
-            // Count of vertices
+
+    // Count of vertices
+    
             ComputeBuffer.CopyCount(verticesBuffer, vCountBuffer, 0);
             int[] triCountArray = {0};
             vCountBuffer.GetData(triCountArray);
@@ -85,11 +98,15 @@ namespace VoxelEngine {
             verticesBuffer.Release();
             vCountBuffer.Release();
 
-            foreach (var vertexA in verticesA) {
-                _verticesIndicesBuffer.Add(new Vector3Int((int) vertexA.x, (int) vertexA.y, (int) vertexA.z),
-                    _verticesBuffer.Count);
-                _verticesBuffer.Add(vertexA.pos);
-            }
+
+                for (var i = 0; i < numV; i++) {
+                    _verticesIndicesBuffer.Add(new Vector3Int((int) verticesA[i].x, (int) verticesA[i].y, (int) verticesA[i].z),
+                        _verticesBuffer.Count);
+                    _verticesBuffer.Add(verticesA[i].pos);
+                }
+
+
+         
         }
 
         private IEnumerator GetTriangles(Dictionary<Vector3Int, int> indexes, DensityData densityData) {

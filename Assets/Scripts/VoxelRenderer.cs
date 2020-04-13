@@ -61,7 +61,7 @@ namespace VoxelEngine {
         IEnumerator test() {
             while (true) {
                 RequestUpdateGenerator();
-                yield return new WaitForSeconds(2);
+                yield return new WaitForSeconds(3);
             }
         }
         

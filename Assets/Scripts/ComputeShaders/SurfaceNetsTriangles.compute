@@ -1,0 +1,119 @@
+﻿#pragma kernel CSMain
+
+static const int numThreads = 8;
+
+// STRUCTURES
+struct Vertex {
+  uint3 index;
+  float3 position;
+};
+
+
+// VARIABLES
+int sizeX;
+int sizeY;
+int sizeZ;
+float3 size;
+float3 position;
+float3 UnitVector;
+
+// BUFFERS
+AppendStructuredBuffer<Vertex> vertices;
+RWStructuredBuffer<float> densityData;
+
+
+
+// FUNCTIONS
+float Adapt(float v0, float v1) {
+  return (0.0f - v0) / (v1 - v0);
+}
+
+float3 getDensityPosition(uint x, uint y, uint z) {
+    float3 posInGrid = float3(
+        ((float) x / (sizeX - 1.0f)) * size.x,
+        ((float) y / (sizeY - 1.0f)) * size.y, 
+        ((float) z / (sizeZ - 1.0f)) * size.z
+    );
+                        
+    return position + posInGrid - (size / 2.0f);
+} 
+
+int indexFromCoord(uint x, uint y, uint z) {
+    return x + sizeX * (y + sizeY * z);
+}
+
+
+
+// KERNEL
+[numthreads(numThreads, numThreads, numThreads)]
+void CSMain(int3 id: SV_DispatchThreadID) {
+  if(id.x >= sizeX - 1 || id.y >= sizeY - 1 || id.z >= sizeZ - 1) {
+    return;
+  }
+
+  int xi = id.x;
+  int yi = id.y;
+  int zi = id.z;
+
+  float3 vertexPos = float3(0.0f, 0.0f, 0.0f);
+  int counter = 0;
+
+  for (int dx = 0; dx <= 1; dx++) {
+    for (int dy = 0; dy <= 1; dy++) {
+    
+      if ((densityData[indexFromCoord(xi + dx, yi + dy, zi + 0)] > 0.0f) != (densityData[indexFromCoord(xi + dx, yi + dy, zi + 1)] > 0.0f)) {
+        float3 change = float3(
+          dx,
+          dy,
+          Adapt(densityData[indexFromCoord(xi + dx, yi + dy, zi + 0)], densityData[indexFromCoord(xi + dx, yi + dy, zi + 1)])
+        );
+
+        change = float3(change.x * UnitVector.x, change.y * UnitVector.y, change.z * UnitVector.z);
+        vertexPos += change;
+        counter++;
+      }
+    }
+  }
+
+  for (int dx = 0; dx <= 1; dx++) {
+    for (int dz = 0; dz <= 1; dz++) {
+      if ((densityData[indexFromCoord(xi + dx, yi + 0, zi + dz)] > 0.0f) != (densityData[indexFromCoord(xi + dx, yi + 1, zi + dz)] > 0.0f)) {
+        float3 change = float3(
+          dx,
+          Adapt(densityData[indexFromCoord(xi + dx, yi + 0, zi + dz)], densityData[indexFromCoord(xi + dx, yi + 1, zi + dz)]),
+          dz
+        );
+
+        change = float3(change.x * UnitVector.x, change.y * UnitVector.y, change.z * UnitVector.z);
+        vertexPos += change;
+        counter++;
+      }
+    }
+  }
+
+  for (int dy = 0; dy <= 1; dy++) {
+    for (int dz = 0; dz <= 1; dz++) {
+      if ((densityData[indexFromCoord(xi + 0, yi + dy, zi + dz)] > 0.0f) !=
+        (densityData[indexFromCoord(xi + 1, yi + dy, zi + dz)] > 0.0f)) {
+        float3 change = float3(
+            Adapt(densityData[indexFromCoord(xi + 0, yi + dy, zi + dz)], densityData[indexFromCoord(xi + 1, yi + dy, zi + dz)]),
+            dy,
+            dz
+          );
+
+        change = float3(change.x * UnitVector.x, change.y * UnitVector.y, change.z * UnitVector.z);
+        vertexPos += change;
+        counter++;
+      }
+    }
+  }
+
+  if (counter != 0) {
+    vertexPos /= (float) counter;
+    
+    Vertex v;
+    v.index = uint3(xi, yi, zi);
+    v.position = vertexPos + getDensityPosition(xi, yi, zi);
+    vertices.Append(v);
+  }
+}

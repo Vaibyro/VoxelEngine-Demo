@@ -83,7 +83,7 @@ namespace VoxelEngine {
             // Update the mesh
             if (_generator.MeshDataAvailable) {
                 var mesh = meshFilter.mesh;
-                if (_generator.TryGetMeshData(out var meshData)) {
+                if (_generator.TryPopMeshData(out var meshData)) {
                     mesh.Clear();
                     mesh.SetVertices(meshData.vertices);
                     mesh.SetTriangles(meshData.triangles, 0);
@@ -109,7 +109,7 @@ namespace VoxelEngine {
             _generator.position = transform.position;
             _generator.smoothShade = smoothShade;
             
-            await _generator.GenerateMeshDataAsync();
+            await _generator.RequestMeshDataAsync();
         }
 
         private void OnDrawGizmos() {

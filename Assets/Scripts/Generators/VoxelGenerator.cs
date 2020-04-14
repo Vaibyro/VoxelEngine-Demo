@@ -14,45 +14,58 @@ namespace VoxelEngine {
         public Vector3 size;
         public Vector3Int gridSize;
         public bool smoothShade;
-
         public ComputeShader computeShader;
 
-        public static readonly Vector3[] CubeVertices =
-        {
-            new Vector3( 0, 0, 0 ),
-            new Vector3( 0, 0, 1 ),
-            new Vector3( 0, 1, 0 ),
-            new Vector3( 0, 1, 1 ),
-            new Vector3( 1, 0, 0 ),
-            new Vector3( 1, 0, 1 ),
-            new Vector3( 1, 1, 0 ),
-            new Vector3( 1, 1, 1 ),
-        };
-
-        protected readonly Queue<MeshData> _meshDataQueue = new Queue<MeshData>();
+        /// <summary>
+        /// Queue used to store processed meshData.
+        /// </summary>
+        private MeshData _lastMeshData;
 
         public abstract bool IsProcessing { get; protected set; }
-        public bool MeshDataAvailable => _meshDataQueue.Count > 0;
         
-        public abstract Task GenerateMeshDataAsync();
+        public MeshData MeshData => _lastMeshData;
+        
+        public bool MeshDataAvailable { get; private set; } = false;
 
-        public bool TryGetMeshData(out MeshData meshData) {
+        public async Task RequestMeshDataAsync() {
+            if (IsProcessing) {
+                Debug.LogWarning("Chunk already processing... Request cancelled.");
+                return;
+            }
+            Debug.Log("Chunk processing.");
+            IsProcessing = true;
+            var meshData = await GenerateMeshDataAsync();
+            IsProcessing = false;
+            
+            _lastMeshData = meshData;
+            MeshDataAvailable = true;
+            Debug.Log("Chunk processed.");
+        }
+
+        public bool TryPopMeshData(out MeshData meshData) {
             if (!MeshDataAvailable) {
                 meshData = null;
                 return false;
             }
-            
-            // Flush the beginning of the queue
-            while (_meshDataQueue.Count > 1) {
-                _meshDataQueue.Dequeue();
-            }
 
-            meshData = _meshDataQueue.Dequeue();
+            meshData = _lastMeshData;
+            MeshDataAvailable = false;
             return true;
         }
+
+        public MeshData PopMeshData() {
+            if (!MeshDataAvailable) {
+                throw new Exception("Mesh data not available. Please request data mesh generation first.");
+            }
+
+            return _lastMeshData;
+        }
+
         
-        protected Vector3 GetDensityPosition(Vector3Int coord) {
-            return GetDensityPosition(coord.x, coord.y, coord.z);
+        protected abstract Task<MeshData> GenerateMeshDataAsync();
+        
+        protected Vector3 GetDensityPosition(Vector3Int coordinates) {
+            return GetDensityPosition(coordinates.x, coordinates.y, coordinates.z);
         }
 
         protected Vector3 GetDensityPosition(int x, int y, int z) {

@@ -18,25 +18,11 @@ namespace VoxelEngine {
 
         public override bool IsProcessing { get; protected set; }
 
-        public override async Task GenerateMeshDataAsync() {
-            if (IsProcessing) {
-                Debug.LogWarning("Chunk already processing... Request cancelled.");
-                return;
-            }
-
-            Debug.Log("Chunk processing.");
-            IsProcessing = true;
-
+        protected override async Task<MeshData> GenerateMeshDataAsync() {
             var densityGrid = density.GenerateDensityGrid(gridSize, size, position);
-
             await GetVertices(densityGrid);
             await GetTriangles(_verticesIndicesBuffer, densityGrid);
-
-            // Enqueue new mesh data
-            _meshDataQueue.Enqueue(new MeshData(_verticesBuffer, _trianglesBuffer));
-
-            IsProcessing = false;
-            Debug.Log("Chunk processed.");
+            return new MeshData(_verticesBuffer, _trianglesBuffer);
         }
 
         private async Task GetVertices(DensityData densityData) {
@@ -68,8 +54,7 @@ namespace VoxelEngine {
 
             // Launch kernels
             computeShader.Dispatch(0, threadsGroupsX, threadGroupsY, threadGroupsZ);
-
-
+            
             // ------- Unblock async process
             var request = AsyncGPUReadback.Request(verticesBuffer);
             await AsyncUtils.WaitUntil(() => request.done);

@@ -7,7 +7,7 @@ namespace VoxelEngine {
     public class BlocksVoxelGenerator : VoxelGenerator
     {
         public override bool IsProcessing { get; protected set; }
-        public override Task GenerateMeshDataAsync() {
+        protected override Task<MeshData> GenerateMeshDataAsync() {
             throw new System.NotImplementedException();
         }
     }

@@ -53,15 +53,17 @@ namespace VoxelEngine {
             }
         }
 
-        private void Start() {
-            RequestUpdateGenerator();
-            StartCoroutine(test());
+        private async void Start() {
+            await RequestUpdateGenerator();
+            await test();
         }
 
-        IEnumerator test() {
-            while (true) {
-                RequestUpdateGenerator();
-                yield return new WaitForSeconds(3);
+        private bool run = true;
+        
+        private async Task test() {
+            while (run) {
+                await RequestUpdateGenerator();
+                await Task.Delay(6000);
             }
         }
         
@@ -95,7 +97,7 @@ namespace VoxelEngine {
         /// Method to ask the generator to produce a new mesh.
         /// </summary>
         /// <param name="generator"></param>
-        private void RequestUpdateGenerator() {
+        private async Task RequestUpdateGenerator() {
             if (_generator == null) {
                 _generator = _generators[method];
             }
@@ -107,7 +109,7 @@ namespace VoxelEngine {
             _generator.position = transform.position;
             _generator.smoothShade = smoothShade;
             
-            _generator.RequestMeshUpdate(this);
+            await _generator.GenerateMeshDataAsync();
         }
 
         private void OnDrawGizmos() {
@@ -116,6 +118,10 @@ namespace VoxelEngine {
                 var trans = transform;
                 Gizmos.DrawWireCube(trans.position, size);
             }
+        }
+
+        private void OnDestroy() {
+            run = false;
         }
     }
 }

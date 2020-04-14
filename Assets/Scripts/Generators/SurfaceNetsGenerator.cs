@@ -18,23 +18,20 @@ namespace VoxelEngine {
 
         public override bool IsProcessing { get; protected set; }
 
-        public override IEnumerator GenerateMeshData() {
+        public override async Task GenerateMeshDataAsync() {
             if (IsProcessing) {
                 Debug.LogWarning("Chunk already processing... Request cancelled.");
-                yield break;
+                return;
             }
+
             Debug.Log("Chunk processing.");
             IsProcessing = true;
-            
-            var st = new Stopwatch();
-            st.Start();
+
             var densityGrid = density.GenerateDensityGrid(gridSize, size, position);
-            st.Stop();
-            Debug.Log(st.ElapsedMilliseconds);
-            
-            yield return GetVertices(densityGrid);
-            yield return GetTriangles(_verticesIndicesBuffer, densityGrid);
-            
+
+            await GetVertices(densityGrid);
+            await GetTriangles(_verticesIndicesBuffer, densityGrid);
+
             // Enqueue new mesh data
             _meshDataQueue.Enqueue(new MeshData(_verticesBuffer, _trianglesBuffer));
 
@@ -42,13 +39,10 @@ namespace VoxelEngine {
             Debug.Log("Chunk processed.");
         }
 
-        private IEnumerator GetVertices(DensityData densityData) {
-            
-
-            
+        private async Task GetVertices(DensityData densityData) {
             _verticesBuffer.Clear();
             _verticesIndicesBuffer.Clear();
-            
+
             var s = gridSize.x * gridSize.y * gridSize.z;
             var threadsGroupsX = Mathf.CeilToInt(gridSize.x / (float) ThreadGroupSize);
             var threadGroupsY = Mathf.CeilToInt(gridSize.y / (float) ThreadGroupSize);
@@ -76,14 +70,11 @@ namespace VoxelEngine {
             computeShader.Dispatch(0, threadsGroupsX, threadGroupsY, threadGroupsZ);
 
 
-            
             // ------- Unblock async process
             var request = AsyncGPUReadback.Request(verticesBuffer);
-            yield return new WaitUntil(() => request.done);
+            await AsyncUtils.WaitUntil(() => request.done);
 
-
-    // Count of vertices
-    
+            // Count of vertices
             ComputeBuffer.CopyCount(verticesBuffer, vCountBuffer, 0);
             int[] triCountArray = {0};
             vCountBuffer.GetData(triCountArray);
@@ -98,21 +89,19 @@ namespace VoxelEngine {
             verticesBuffer.Release();
             vCountBuffer.Release();
 
-
-                for (var i = 0; i < numV; i++) {
-                    _verticesIndicesBuffer.Add(new Vector3Int((int) verticesA[i].x, (int) verticesA[i].y, (int) verticesA[i].z),
-                        _verticesBuffer.Count);
-                    _verticesBuffer.Add(verticesA[i].pos);
-                }
-
-
-         
+            for (var i = 0; i < numV; i++) {
+                _verticesIndicesBuffer.Add(
+                    new Vector3Int((int) verticesA[i].x, (int) verticesA[i].y, (int) verticesA[i].z),
+                    _verticesBuffer.Count);
+                _verticesBuffer.Add(verticesA[i].pos);
+            }
         }
 
-        private IEnumerator GetTriangles(Dictionary<Vector3Int, int> indexes, DensityData densityData) {
+
+        private async Task GetTriangles(Dictionary<Vector3Int, int> indexes, DensityData densityData) {
             _trianglesBuffer.Clear();
 
-            Task t = new Task(() => {
+            var t = new Task(() => {
                 for (var xi = 0; xi < gridSize.x - 1; xi++) {
                     for (var yi = 0; yi < gridSize.y - 1; yi++) {
                         for (var zi = 0; zi < gridSize.z - 1; zi++) {
@@ -199,7 +188,7 @@ namespace VoxelEngine {
 
             // todo: temporary solution not optimal at all
             t.Start();
-            yield return new WaitUntil(() => t.IsCompleted);
+            await t;
         }
     }
 }

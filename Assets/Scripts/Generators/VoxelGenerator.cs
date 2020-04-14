@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace VoxelEngine {
@@ -33,12 +34,8 @@ namespace VoxelEngine {
         public abstract bool IsProcessing { get; protected set; }
         public bool MeshDataAvailable => _meshDataQueue.Count > 0;
         
-        public abstract IEnumerator GenerateMeshData();
+        public abstract Task GenerateMeshDataAsync();
 
-        public void RequestMeshUpdate(MonoBehaviour monoBehaviour) {
-            monoBehaviour.StartCoroutine(GenerateMeshData());
-        }
-        
         public bool TryGetMeshData(out MeshData meshData) {
             if (!MeshDataAvailable) {
                 meshData = null;

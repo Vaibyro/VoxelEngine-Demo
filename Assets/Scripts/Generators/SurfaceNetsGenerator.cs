@@ -15,26 +15,24 @@ namespace VoxelEngine {
         private readonly Dictionary<Vector3Int, int> _verticesIndicesBuffer = new Dictionary<Vector3Int, int>();
 
         private const int ThreadGroupSize = 8;
-
-        public override bool IsProcessing { get; protected set; }
-
+        
         protected override async Task<MeshData> GenerateMeshDataAsync() {
+            // todo: make density generation async to reduce bottleneck
             var densityGrid = density.GenerateDensityGrid(gridSize, size, position);
-            await GetVertices(densityGrid);
-            await GetTriangles(_verticesIndicesBuffer, densityGrid);
+            await ComputeVertices(densityGrid);
+            await ComputeTriangles(_verticesIndicesBuffer, densityGrid);
             return new MeshData(_verticesBuffer, _trianglesBuffer);
         }
 
-        private async Task GetVertices(DensityData densityData) {
+        private async Task ComputeVertices(DensityData densityData) {
             _verticesBuffer.Clear();
             _verticesIndicesBuffer.Clear();
 
-            var s = gridSize.x * gridSize.y * gridSize.z;
-            var threadsGroupsX = Mathf.CeilToInt(gridSize.x / (float) ThreadGroupSize);
-            var threadGroupsY = Mathf.CeilToInt(gridSize.y / (float) ThreadGroupSize);
-            var threadGroupsZ = Mathf.CeilToInt(gridSize.z / (float) ThreadGroupSize);
-
-            var densityBuffer = new ComputeBuffer(s, sizeof(float));
+            // Get size and thread groups count.
+            var s = GpuComputingUtils.GetSize(gridSize);
+            var threadGroups = GpuComputingUtils.GetThreadGroupsCount(gridSize, ThreadGroupSize);
+            
+            var densityBuffer = new ComputeBuffer(s, sizeof(float)); // todo: reuse the buffers to reduce bottleneck
             densityBuffer.SetData(densityData.Data);
             computeShader.SetBuffer(0, "densityData", densityBuffer);
 
@@ -53,7 +51,7 @@ namespace VoxelEngine {
             computeShader.SetVector("UnitVector", this.UnitVector);
 
             // Launch kernels
-            computeShader.Dispatch(0, threadsGroupsX, threadGroupsY, threadGroupsZ);
+            computeShader.Dispatch(0, threadGroups.x, threadGroups.y, threadGroups.z);
             
             // ------- Unblock async process
             var request = AsyncGPUReadback.Request(verticesBuffer);
@@ -74,6 +72,7 @@ namespace VoxelEngine {
             verticesBuffer.Release();
             vCountBuffer.Release();
 
+            // todo: investigate to reduce bottleneck, run it on other thread? Find better algorithm?
             for (var i = 0; i < numV; i++) {
                 _verticesIndicesBuffer.Add(
                     new Vector3Int((int) verticesA[i].x, (int) verticesA[i].y, (int) verticesA[i].z),
@@ -83,7 +82,7 @@ namespace VoxelEngine {
         }
 
 
-        private async Task GetTriangles(Dictionary<Vector3Int, int> indexes, DensityData densityData) {
+        private async Task ComputeTriangles(Dictionary<Vector3Int, int> indexes, DensityData densityData) {
             _trianglesBuffer.Clear();
 
             var t = new Task(() => {
@@ -171,7 +170,7 @@ namespace VoxelEngine {
                 }
             });
 
-            // todo: temporary solution not optimal at all
+            // todo: temporary solution not optimal at all, run it on GPU?
             t.Start();
             await t;
         }

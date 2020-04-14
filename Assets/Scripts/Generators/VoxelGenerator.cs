@@ -7,7 +7,6 @@ using UnityEngine;
 namespace VoxelEngine {
     public abstract class VoxelGenerator
     {
-        protected Vector3 UnitVector => new Vector3(  size.x / gridSize.x, size.y / gridSize.y,size.z / gridSize.z);
         public Density density;
         public float threshold;
         public Vector3 position;
@@ -16,17 +15,28 @@ namespace VoxelEngine {
         public bool smoothShade;
         public ComputeShader computeShader;
 
-        /// <summary>
-        /// Queue used to store processed meshData.
-        /// </summary>
+        protected Vector3 UnitVector => new Vector3(  size.x / gridSize.x, size.y / gridSize.y,size.z / gridSize.z);
         private MeshData _lastMeshData;
 
-        public abstract bool IsProcessing { get; protected set; }
+        /// <summary>
+        /// Get if a mesh data request is operating.
+        /// </summary>
+        public bool IsProcessing { get; protected set; }
         
+        /// <summary>
+        /// Get the current mesh data. Caution: it can be null.
+        /// </summary>
         public MeshData MeshData => _lastMeshData;
         
+        /// <summary>
+        /// Get if mesh data is available.
+        /// </summary>
         public bool MeshDataAvailable { get; private set; } = false;
 
+        /// <summary>
+        /// Request an update of the mesh and make it available in this object when the processing is finished.
+        /// </summary>
+        /// <returns></returns>
         public async Task RequestMeshDataAsync() {
             if (IsProcessing) {
                 Debug.LogWarning("Chunk already processing... Request cancelled.");
@@ -34,7 +44,7 @@ namespace VoxelEngine {
             }
             Debug.Log("Chunk processing.");
             IsProcessing = true;
-            var meshData = await GenerateMeshDataAsync();
+            var meshData = await GenerateMeshDataAsync(); // generate a mesh
             IsProcessing = false;
             
             _lastMeshData = meshData;
@@ -42,8 +52,13 @@ namespace VoxelEngine {
             Debug.Log("Chunk processed.");
         }
 
+        /// <summary>
+        /// Try to pop the mesh data. If it is available, return true and the mesh in the out parameter, otherwise, return false and null as out parameter.
+        /// </summary>
+        /// <param name="meshData"></param>
+        /// <returns></returns>
         public bool TryPopMeshData(out MeshData meshData) {
-            if (!MeshDataAvailable) {
+            if (!MeshDataAvailable) { // Return false and null as out parameter if not mesh data available.
                 meshData = null;
                 return false;
             }
@@ -53,6 +68,11 @@ namespace VoxelEngine {
             return true;
         }
 
+        /// <summary>
+        /// Pop the mesh data. If you are not sure it is null, please use TryPopMeshData instead.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public MeshData PopMeshData() {
             if (!MeshDataAvailable) {
                 throw new Exception("Mesh data not available. Please request data mesh generation first.");
@@ -61,7 +81,10 @@ namespace VoxelEngine {
             return _lastMeshData;
         }
 
-        
+        /// <summary>
+        /// Async method to generate mesh data.
+        /// </summary>
+        /// <returns></returns>
         protected abstract Task<MeshData> GenerateMeshDataAsync();
         
         protected Vector3 GetDensityPosition(Vector3Int coordinates) {
